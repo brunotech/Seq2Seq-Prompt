@@ -8,7 +8,7 @@ from pandas import DataFrame
 
 
 def get_label(task, line):
-    if task in [
+    if task not in [
         "MNLI",
         "MRPC",
         "QNLI",
@@ -20,37 +20,26 @@ def get_label(task, line):
         "WNLI",
         "CoLA",
     ]:
-        # GLUE style
-        line = line.strip().split("\t")
-        if task == "CoLA":
-            return line[1]
-        elif task == "MNLI":
-            return line[-1]
-        elif task == "MRPC":
-            return line[0]
-        elif task == "QNLI":
-            return line[-1]
-        elif task == "QQP":
-            return line[-1]
-        elif task == "RTE":
-            return line[-1]
-        elif task == "SNLI":
-            return line[-1]
-        elif task == "SST-2":
-            return line[-1]
-        elif task == "STS-B":
-            return 0 if float(line[-1]) < 2.5 else 1
-        elif task == "WNLI":
-            return line[-1]
-        else:
-            raise NotImplementedError
-    else:
         return line[0]
+    # GLUE style
+    line = line.strip().split("\t")
+    if task == "CoLA":
+        return line[1]
+    elif task in ["MNLI", "QNLI", "QQP", "RTE", "SNLI", "SST-2", "WNLI"]:
+        return line[-1]
+    elif task == "MRPC":
+        return line[0]
+    elif task == "STS-B":
+        return 0 if float(line[-1]) < 2.5 else 1
+    else:
+        raise NotImplementedError
 
 
 def load_datasets(data_dir, tasks):
     datasets = {}
     for task in tasks:
+        # GLUE style (tsv)
+        dataset = {}
         if task in [
             "MNLI",
             "MRPC",
@@ -63,8 +52,6 @@ def load_datasets(data_dir, tasks):
             "WNLI",
             "CoLA",
         ]:
-            # GLUE style (tsv)
-            dataset = {}
             dirname = os.path.join(data_dir, task)
             if task == "MNLI":
                 splits = ["train", "dev_matched", "dev_mismatched"]
@@ -75,16 +62,13 @@ def load_datasets(data_dir, tasks):
                 with open(filename, "r") as f:
                     lines = f.readlines()
                 dataset[split] = lines
-            datasets[task] = dataset
         else:
-            # Other datasets (csv)
-            dataset = {}
             dirname = os.path.join(data_dir, task)
             splits = ["train", "test"]
             for split in splits:
                 filename = os.path.join(dirname, f"{split}.csv")
                 dataset[split] = pd.read_csv(filename, header=None)
-            datasets[task] = dataset
+        datasets[task] = dataset
     return datasets
 
 
@@ -105,7 +89,7 @@ def split_header(task, lines):
         "STS-B",
         "WNLI",
     ]:
-        return lines[0:1], lines[1:]
+        return lines[:1], lines[1:]
     else:
         raise ValueError("Unknown GLUE task.")
 
@@ -172,7 +156,7 @@ def main():
             np.random.seed(seed)
 
             # Shuffle the training set
-            print("| Task = %s" % (task))
+            print(f"| Task = {task}")
             if task in [
                 "MNLI",
                 "MRPC",
@@ -187,12 +171,10 @@ def main():
             ]:
                 # GLUE style
                 train_header, train_lines = split_header(task, dataset["train"])
-                np.random.shuffle(train_lines)
             else:
                 # Other datasets
                 train_lines = dataset["train"].values.tolist()
-                np.random.shuffle(train_lines)
-
+            np.random.shuffle(train_lines)
             # Set up dir
             task_dir = os.path.join(args.output_dir, task)
             setting_dir = os.path.join(task_dir, f"{k}-{seed}")
@@ -245,8 +227,8 @@ def main():
                 with open(os.path.join(setting_dir, "train.tsv"), "w") as f:
                     for line in train_header:
                         f.write(line)
-                    for label in label_list:
-                        for line in label_list[label][:k]:
+                    for value in label_list.values():
+                        for line in value[:k]:
                             f.write(line)
                 name = "dev.tsv"
                 if task == "MNLI":
@@ -254,25 +236,23 @@ def main():
                 with open(os.path.join(setting_dir, name), "w") as f:
                     for line in train_header:
                         f.write(line)
-                    for label in label_list:
+                    for value_ in label_list.values():
                         dev_rate = 11 if "10x" in args.mode else 2
-                        for line in label_list[label][k : k * dev_rate]:
+                        for line in value_[k : k * dev_rate]:
                             f.write(line)
             else:
                 new_train = []
-                for label in label_list:
-                    for line in label_list[label][:k]:
-                        new_train.append(line)
+                for value__ in label_list.values():
+                    new_train.extend(iter(value__[:k]))
                 new_train = DataFrame(new_train)
                 new_train.to_csv(
                     os.path.join(setting_dir, "train.csv"), header=False, index=False
                 )
 
                 new_dev = []
-                for label in label_list:
+                for value___ in label_list.values():
                     dev_rate = 11 if "10x" in args.mode else 2
-                    for line in label_list[label][k : k * dev_rate]:
-                        new_dev.append(line)
+                    new_dev.extend(iter(value___[k : k * dev_rate]))
                 new_dev = DataFrame(new_dev)
                 new_dev.to_csv(
                     os.path.join(setting_dir, "dev.csv"), header=False, index=False

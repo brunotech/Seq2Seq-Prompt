@@ -59,7 +59,7 @@ class MrpcProcessor(DataProcessor):
 
     def get_train_examples(self, data_dir):
         """See base class."""
-        logger.info("LOOKING AT {}".format(os.path.join(data_dir, "train.tsv")))
+        logger.info(f'LOOKING AT {os.path.join(data_dir, "train.tsv")}')
         return self._create_examples(
             self._read_tsv(os.path.join(data_dir, "train.tsv")), "train"
         )
@@ -86,7 +86,7 @@ class MrpcProcessor(DataProcessor):
         for (i, line) in enumerate(lines):
             if i == 0:
                 continue
-            guid = "%s-%s" % (set_type, i)
+            guid = f"{set_type}-{i}"
             text_a = line[3]
             text_b = line[4]
             label = line[0]
@@ -136,7 +136,7 @@ class MnliProcessor(DataProcessor):
         for (i, line) in enumerate(lines):
             if i == 0:
                 continue
-            guid = "%s-%s" % (set_type, line[0])
+            guid = f"{set_type}-{line[0]}"
             text_a = line[8]
             text_b = line[9]
             label = line[-1]
@@ -204,7 +204,7 @@ class SnliProcessor(DataProcessor):
         for (i, line) in enumerate(lines):
             if i == 0:
                 continue
-            guid = "%s-%s" % (set_type, line[0])
+            guid = f"{set_type}-{line[0]}"
             text_a = line[7]
             text_b = line[8]
             label = line[-1]
@@ -254,7 +254,7 @@ class ColaProcessor(DataProcessor):
         text_index = 3
         examples = []
         for (i, line) in enumerate(lines):
-            guid = "%s-%s" % (set_type, i)
+            guid = f"{set_type}-{i}"
             text_a = line[text_index]
             label = line[1]
             examples.append(
@@ -304,7 +304,7 @@ class Sst2Processor(DataProcessor):
         for (i, line) in enumerate(lines):
             if i == 0:
                 continue
-            guid = "%s-%s" % (set_type, i)
+            guid = f"{set_type}-{i}"
             text_a = line[text_index]
             label = line[1]
             examples.append(
@@ -353,7 +353,7 @@ class StsbProcessor(DataProcessor):
         for (i, line) in enumerate(lines):
             if i == 0:
                 continue
-            guid = "%s-%s" % (set_type, line[0])
+            guid = f"{set_type}-{line[0]}"
             text_a = line[7]
             text_b = line[8]
             label = line[-1]
@@ -406,7 +406,7 @@ class QqpProcessor(DataProcessor):
         for (i, line) in enumerate(lines):
             if i == 0:
                 continue
-            guid = "%s-%s" % (set_type, line[0])
+            guid = f"{set_type}-{line[0]}"
             try:
                 text_a = line[q1_index]
                 text_b = line[q2_index]
@@ -459,7 +459,7 @@ class QnliProcessor(DataProcessor):
         for (i, line) in enumerate(lines):
             if i == 0:
                 continue
-            guid = "%s-%s" % (set_type, line[0])
+            guid = f"{set_type}-{line[0]}"
             text_a = line[1]
             text_b = line[2]
             label = line[-1]
@@ -509,7 +509,7 @@ class RteProcessor(DataProcessor):
         for (i, line) in enumerate(lines):
             if i == 0:
                 continue
-            guid = "%s-%s" % (set_type, line[0])
+            guid = f"{set_type}-{line[0]}"
             text_a = line[1]
             text_b = line[2]
             label = line[-1]
@@ -559,7 +559,7 @@ class WnliProcessor(DataProcessor):
         for (i, line) in enumerate(lines):
             if i == 0:
                 continue
-            guid = "%s-%s" % (set_type, line[0])
+            guid = f"{set_type}-{line[0]}"
             text_a = line[1]
             text_b = line[2]
             label = line[-1]
@@ -632,7 +632,7 @@ class TextClassificationProcessor(DataProcessor):
         """Creates examples for the training, dev and test sets."""
         examples = []
         for (i, line) in enumerate(lines):
-            guid = "%s-%s" % (set_type, i)
+            guid = f"{set_type}-{i}"
             if self.task_name == "ag_news":
                 examples.append(
                     InputExample(
@@ -670,7 +670,7 @@ class TextClassificationProcessor(DataProcessor):
 class BoolqProcessor(DataProcessor):
     """Processor for the BoolQ data set (SuperGLUE version)."""
 
-    def _read_jsonl(cls, input_file, quotechar=None):
+    def _read_jsonl(self, input_file, quotechar=None):
         """Reads a tab separated value file."""
         with open(input_file, "r", encoding="utf-8-sig") as f:
             return [json.loads(l) for l in f]
@@ -709,7 +709,7 @@ class BoolqProcessor(DataProcessor):
     def _create_examples(self, lines, set_type):
         """Creates examples for the training and dev sets."""
         examples = []
-        for (i, line) in enumerate(lines):
+        for line in lines:
             guid = line["idx"]
             text_a = line["passage"]
             text_b = line["question"]
@@ -723,7 +723,7 @@ class BoolqProcessor(DataProcessor):
 class CbProcessor(DataProcessor):
     """Processor for the CommitmentBank data set (SuperGLUE version)."""
 
-    def _read_jsonl(cls, input_file, quotechar=None):
+    def _read_jsonl(self, input_file, quotechar=None):
         """Reads a tab separated value file."""
         with open(input_file, "r", encoding="utf-8-sig") as f:
             return [json.loads(l) for l in f]
@@ -762,7 +762,7 @@ class CbProcessor(DataProcessor):
     def _create_examples(self, lines, set_type):
         """Creates examples for the training and dev sets."""
         examples = []
-        for (i, line) in enumerate(lines):
+        for line in lines:
             guid = line["idx"]
             text_a = line["premise"]
             text_b = line["hypothesis"]
@@ -776,7 +776,7 @@ class CbProcessor(DataProcessor):
 class CopaProcessor(DataProcessor):
     """Processor for the COPA data set (SuperGLUE version)."""
 
-    def _read_jsonl(cls, input_file, quotechar=None):
+    def _read_jsonl(self, input_file, quotechar=None):
         """Reads a tab separated value file."""
         with open(input_file, "r", encoding="utf-8-sig") as f:
             return [json.loads(l) for l in f]
@@ -822,7 +822,7 @@ class CopaProcessor(DataProcessor):
         """Creates examples for the training and dev sets."""
         examples = []
         labels_mapping = {}
-        for (i, line) in enumerate(lines):
+        for line in lines:
             # guid = "%s-%s" % (set_type, line["idx"])
             guid = line["idx"]
             label = line["label"]
@@ -831,10 +831,7 @@ class CopaProcessor(DataProcessor):
             choice2 = line["choice2"]
             question = line["question"]
             if manual:
-                if question == "effect":
-                    question = "so"
-                else:
-                    question = "because"
+                question = "so" if question == "effect" else "because"
                 labels_mapping[guid] = [choice1[:-1], choice2[:-1]]
             examples.append(
                 OurInputExample(
@@ -846,16 +843,13 @@ class CopaProcessor(DataProcessor):
                     label=label,
                 )
             )
-        if manual:
-            return examples, labels_mapping
-        else:
-            return examples
+        return (examples, labels_mapping) if manual else examples
 
 
 class MultircProcessor(DataProcessor):
     """Processor for the Multirc data set (SuperGLUE version)."""
 
-    def _read_jsonl(cls, input_file, quotechar=None):
+    def _read_jsonl(self, input_file, quotechar=None):
         """Reads a tab separated value file."""
         with open(input_file, "r", encoding="utf-8-sig") as f:
             return [json.loads(l) for l in f]
@@ -899,7 +893,7 @@ class MultircProcessor(DataProcessor):
         # feels like there's a missing [SEP] token. Maybe the robust
         # solution is to use [SEP] tokens between everything.
         examples = []
-        for (i, line) in enumerate(lines):
+        for line in lines:
             guid = [line["tid"], line["qid"], line["aid"]]
             label = line["label"]
             text = line["text"]
@@ -924,7 +918,7 @@ class RecordProcessor(DataProcessor):
     def __init__(self):
         self._answers = None
 
-    def _read_jsonl(cls, input_file, quotechar=None):
+    def _read_jsonl(self, input_file, quotechar=None):
         """Reads a tab separated value file."""
         with open(input_file, "r", encoding="utf-8-sig") as f:
             return [json.loads(l) for l in f]
@@ -1009,7 +1003,7 @@ class RecordProcessor(DataProcessor):
 class WicProcessor(DataProcessor):
     """Processor for the WiC data set (SuperGLUE version)."""
 
-    def _read_jsonl(cls, input_file, quotechar=None):
+    def _read_jsonl(self, input_file, quotechar=None):
         """Reads a tab separated value file."""
         with open(input_file, "r", encoding="utf-8-sig") as f:
             return [json.loads(l) for l in f]
@@ -1048,7 +1042,7 @@ class WicProcessor(DataProcessor):
     def _create_examples(self, lines, set_type):
         """Creates examples for the training and dev sets."""
         examples = []
-        for (i, line) in enumerate(lines):
+        for line in lines:
             # guid = "%s-%s" % (set_type, line["idx"])
             guid = line["idx"]
             label = line["label"]
@@ -1072,7 +1066,7 @@ class WicProcessor(DataProcessor):
 class WscProcessor(DataProcessor):
     """Processor for the WSC data set (SuperGLUE version)."""
 
-    def _read_jsonl(cls, input_file, quotechar=None):
+    def _read_jsonl(self, input_file, quotechar=None):
         """Reads a tab separated value file."""
         with open(input_file, "r", encoding="utf-8-sig") as f:
             return [json.loads(l) for l in f]

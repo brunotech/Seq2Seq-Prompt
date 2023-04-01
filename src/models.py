@@ -102,12 +102,10 @@ class BertForPromptFinetuning(BertPreTrainedModel):
                 )
             return prediction_mask_scores
 
-        # Return logits for each label
-        logits = []
-        for label_id in range(len(self.label_word_list)):
-            logits.append(
-                prediction_mask_scores[:, self.label_word_list[label_id]].unsqueeze(-1)
-            )
+        logits = [
+            prediction_mask_scores[:, self.label_word_list[label_id]].unsqueeze(-1)
+            for label_id in range(len(self.label_word_list))
+        ]
         logits = torch.cat(logits, -1)
 
         # Regression task
@@ -196,14 +194,12 @@ class RobertaForPromptFinetuning(BertPreTrainedModel):
                 )
             return prediction_mask_scores
 
-        # Return logits for each label
-        logits = []
-        for label_id in range(len(self.label_words_list)):
-            logits.append(
-                prediction_mask_scores[:, self.label_words_list[label_id][0]].unsqueeze(
-                    -1
-                )
-            )
+        logits = [
+            prediction_mask_scores[
+                :, self.label_words_list[label_id][0]
+            ].unsqueeze(-1)
+            for label_id in range(len(self.label_words_list))
+        ]
         logits = torch.cat(logits, -1)
 
         # Regression task
@@ -318,8 +314,7 @@ class T5ForPromptFinetuning(T5ForConditionalGeneration):
             return 0
         precision = 1.0 * num_same / len(prediction_tokens)
         recall = 1.0 * num_same / len(ground_truth_tokens)
-        f1 = (2 * precision * recall) / (precision + recall)
-        return f1
+        return (2 * precision * recall) / (precision + recall)
 
     def _record_em_score(self, prediction, ground_truth):
         """Compute normalized exact match

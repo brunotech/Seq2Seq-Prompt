@@ -18,6 +18,7 @@
 The Trainer class, to easily train a 🤗 Transformers from scratch or finetune it on a new task.
 """
 
+
 import collections
 import inspect
 import math
@@ -124,11 +125,7 @@ else:
     _use_native_amp = True
     from torch.cuda.amp import autocast
 
-if version.parse(torch.__version__) < version.parse("1.2"):
-    _use_ddp_no_sync = False
-else:
-    _use_ddp_no_sync = True
-
+_use_ddp_no_sync = version.parse(torch.__version__) >= version.parse("1.2")
 if is_datasets_available():
     import datasets
 
@@ -181,7 +178,7 @@ def default_dev_objective(metrics):
     elif "eval_acc" in metrics:
         return metrics["eval_acc"]
 
-    raise Exception("No metric founded for {}".format(metrics))
+    raise Exception(f"No metric founded for {metrics}")
 
 
 class Trainer(transformers.Trainer):
@@ -219,13 +216,22 @@ class Trainer(transformers.Trainer):
                 else:
                     params[n] = p
             no_decay = ["bias", "LayerNorm.weight"]
-            if not self.args.tprompt:
-                optimizer_grouped_parameters = [
+            optimizer_grouped_parameters = (
+                [
+                    {
+                        "params": list(
+                            self.model.t5.get_input_embeddings().parameters()
+                        ),
+                        "weight_decay": 0.0,
+                    }
+                ]
+                if self.args.tprompt
+                else [
                     {
                         "params": [
                             p
                             for n, p in params.items()
-                            if not any(nd in n for nd in no_decay)
+                            if all(nd not in n for nd in no_decay)
                         ],
                         "weight_decay": self.args.weight_decay,
                     },
@@ -238,15 +244,7 @@ class Trainer(transformers.Trainer):
                         "weight_decay": 0.0,
                     },
                 ]
-            else:
-                optimizer_grouped_parameters = [
-                    {
-                        "params": [
-                            p for p in self.model.t5.get_input_embeddings().parameters()
-                        ],
-                        "weight_decay": 0.0,
-                    }
-                ]
+            )
             self.optimizer = AdamW(
                 optimizer_grouped_parameters,
                 lr=self.args.learning_rate,

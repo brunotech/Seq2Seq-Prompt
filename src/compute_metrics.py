@@ -100,13 +100,11 @@ if _has_sklearn:
                 qst2ans[qst_idx].append((pred, label))
 
             f1s, ems = [], []
-            for qst, preds_and_labels in qst2ans.items():
+            for preds_and_labels in qst2ans.values():
                 preds, labels = zip(*preds_and_labels)
                 f1 = f1_score(y_true=labels, y_pred=preds)
                 f1s.append(f1)
-                em = int(
-                    sum([p == l for p, l in preds_and_labels]) == len(preds_and_labels)
-                )
+                em = int(sum(p == l for p, l in preds_and_labels) == len(preds_and_labels))
                 ems.append(em)
 
             return {"f1": sum(f1s) / len(f1s), "em": sum(ems) / len(ems)}

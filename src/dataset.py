@@ -92,7 +92,6 @@ def input_example_to_tuple(example):
     if example.text_b is None:
         if pd.isna(example.text_a) or example.text_a is None:
             return [""]
-            logger.warn("Empty input")
         else:
             return [example.text_a]
     elif not hasattr(example, "text_c"):

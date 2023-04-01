@@ -81,7 +81,7 @@ def main():
             np.random.seed(seed)
 
             # Shuffle the training set
-            print("| Task = %s" % (task))
+            print(f"| Task = {task}")
             train_lines = dataset["train"]
             np.random.shuffle(train_lines)
 
@@ -121,13 +121,13 @@ def main():
                     else:
                         label_list[label].append(line)
                 with jsonlines.open(os.path.join(setting_dir, "train.jsonl"), "w") as f:
-                    for label in label_list:
-                        for line in label_list[label][:k]:
+                    for value in label_list.values():
+                        for line in value[:k]:
                             f.write(line)
                 with jsonlines.open(os.path.join(setting_dir, "dev.jsonl"), "w") as f:
-                    for label in label_list:
+                    for value_ in label_list.values():
                         val_rate = 11 if "10x" in args.mode else 2
-                        for line in label_list[label][k : k * val_rate]:
+                        for line in value_[k : k * val_rate]:
                             f.write(line)
 
 
