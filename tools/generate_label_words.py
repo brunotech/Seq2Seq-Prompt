@@ -145,7 +145,7 @@ def generate(
 
     input_ids = input_ids.cuda()
     attention_mask = attention_mask.cuda()
-    assert len(input_tensors) > 0
+    assert input_tensors
 
     # Maximum generate content length
     max_length = 4
@@ -208,18 +208,15 @@ def generate(
             for word_id in ids:
                 output_id = item["output_id"]
 
-                if (
-                    word_id == start_mask - output_id
-                    or word_id == tokenizer.convert_tokens_to_ids("</s>")
-                ):
+                if word_id in [
+                    start_mask - output_id,
+                    tokenizer.convert_tokens_to_ids("</s>"),
+                ]:
                     # Finish one part
-                    if (
-                        length_limit is not None
-                        and item["last_length"] < length_limit[output_id - 1]
-                    ):
-                        check = False
-                    else:
-                        check = True
+                    check = (
+                        length_limit is None
+                        or item["last_length"] >= length_limit[output_id - 1]
+                    )
                     output_id += 1
                     last_length = 0
                 else:
@@ -339,7 +336,7 @@ def generate(
                     }
                     new_current_output.append(new_item)
 
-        if len(new_current_output) == 0:
+        if not new_current_output:
             break
 
         new_current_output.sort(key=lambda x: x["ll"], reverse=True)
@@ -349,11 +346,11 @@ def generate(
     result = []
     # print("####### generated results #######")
     for item in current_output:
-        generate_text = ""
-        for token in item["output"]:
-            if token == 32099:
-                continue
-            generate_text += tokenizer.convert_ids_to_tokens(token)
+        generate_text = "".join(
+            tokenizer.convert_ids_to_tokens(token)
+            for token in item["output"]
+            if token != 32099
+        )
         # print("--------------")
         score = get_prob(
             dataset,
@@ -369,13 +366,11 @@ def generate(
         # print("generated text", generate_text)
         result.append([generate_text, score, item["output"] + [1]])
     result.sort(key=lambda x: x[1], reverse=True)
-    result = result[:50]
-    # print("####### generated results #######\n")
-
-    return result
+    return result[:50]
 
 
 def load_dataset(task, data_dir):
+    dataset = []
     if task in [
         "MNLI",
         "MRPC",
@@ -392,7 +387,6 @@ def load_dataset(task, data_dir):
         if task != "CoLA":
             lines = lines[1:]
 
-        dataset = []
         for line in lines:
             line = line.strip().split("\t")
             if task == "CoLA":
@@ -401,12 +395,10 @@ def load_dataset(task, data_dir):
                 dataset.append({"label": line[-1], "text": [line[8], line[9]]})
             elif task == "MRPC":
                 dataset.append({"label": line[0], "text": [line[-2], line[-1]]})
-            elif task == "QNLI":
+            elif task in ["QNLI", "RTE", "WNLI"]:
                 dataset.append({"label": line[-1], "text": [line[1], line[2]]})
             elif task == "QQP":
                 dataset.append({"label": line[-1], "text": [line[3], line[4]]})
-            elif task == "RTE":
-                dataset.append({"label": line[-1], "text": [line[1], line[2]]})
             elif task == "SNLI":
                 dataset.append({"label": line[-1], "text": [line[7], line[8]]})
             elif task == "SST-2":
@@ -418,8 +410,6 @@ def load_dataset(task, data_dir):
                         "text": [line[-3], line[-2]],
                     }
                 )
-            elif task == "WNLI":
-                dataset.append({"label": line[-1], "text": [line[1], line[2]]})
             else:
                 raise NotImplementedError
     elif task in [
@@ -432,7 +422,6 @@ def load_dataset(task, data_dir):
         "WiC",
         "WSC",
     ]:
-        dataset = []
         for line in jsonlines.Reader(
             open(os.path.join(data_dir, "train.jsonl"), "r+", encoding="utf8")
         ):
@@ -505,10 +494,7 @@ def load_dataset(task, data_dir):
         lines = pd.read_csv(
             os.path.join(data_dir, "train.csv"), header=None
         ).values.tolist()
-        dataset = []
-        for line in lines:
-            dataset.append({"label": line[0], "text": [line[1]]})
-
+        dataset.extend({"label": line[0], "text": [line[1]]} for line in lines)
     return dataset
 
 
@@ -550,7 +536,7 @@ def get_prob(
         attention_mask[i, : input_tensors[i].size(-1)] = 1
     input_ids = input_ids.cuda()
     attention_mask = attention_mask.cuda()
-    assert len(input_tensors) > 0
+    assert input_tensors
 
     # Maximum generate content length
     max_length = 20
@@ -567,12 +553,13 @@ def get_prob(
             labels=example_labels.cuda(),
         )[1]
         aggr_output = aggr_output.mean(0)  # Shape (sequence_length, config.vocab_size)
-        ll = 0
-        for i, word_id in enumerate(example_label):
-            ll += (
+        ll = sum(
+            (
                 aggr_output[i][word_id].item()
                 - torch.logsumexp(aggr_output[i], -1).item()
             )
+            for i, word_id in enumerate(example_label)
+        )
         return math.exp(ll)
 
 
@@ -645,7 +632,7 @@ def search_mappings(
 
     os.makedirs(output_dir, exist_ok=True)
     os.makedirs(os.path.join(output_dir, task_name), exist_ok=True)
-    mapping_labels = dict()
+    mapping_labels = {}
     for label in mapping.keys():
         f = open(
             os.path.join(output_dir, task_name, "{}-{}-{}.txt".format(k, seed, label)),
@@ -762,10 +749,7 @@ def search_mappings(
     )
     f.write(json.dumps(mapping_labels))
 
-    f = open(
-        os.path.join(output_dir, task_name, "16-" + str(seed) + ".txt"),
-        "w",
-    )
+    f = open(os.path.join(output_dir, task_name, f"16-{str(seed)}.txt"), "w")
     mapping_list = []
 
     def gather_mappings(num, now_mapping, prob):

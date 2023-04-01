@@ -39,8 +39,7 @@ def f1_score(prediction, ground_truth):
         return 0
     precision = 1.0 * num_same / len(prediction_tokens)
     recall = 1.0 * num_same / len(ground_truth_tokens)
-    f1 = (2 * precision * recall) / (precision + recall)
-    return f1
+    return (2 * precision * recall) / (precision + recall)
 
 
 def exact_match_score(prediction, ground_truth):
@@ -62,7 +61,7 @@ def evaluate(dataset, predictions):
         for qa in passage['qas']:
             total += 1
             if qa['id'] not in predictions:
-                message = 'Unanswered question {} will receive score 0.'.format(qa['id'])
+                message = f"Unanswered question {qa['id']} will receive score 0."
                 print(message, file=sys.stderr)
                 continue
 
@@ -78,7 +77,7 @@ def evaluate(dataset, predictions):
 
     exact_match = 100.0 * exact_match / total
     f1 = 100.0 * f1 / total
-    print('* Exact_match: {}\n* F1: {}'.format(exact_match, f1))
+    print(f'* Exact_match: {exact_match}\n* F1: {f1}')
 
     return {'exact_match': exact_match, 'f1': f1}, correct_ids
 
@@ -95,8 +94,10 @@ if __name__ == '__main__':
     with open(args.data_file) as data_file:
         dataset_json = json.load(data_file)
         if dataset_json['version'] != expected_version:
-            print('Evaluation expects v-{}, but got dataset with v-{}'.format(
-                expected_version, dataset_json['version']), file=sys.stderr)
+            print(
+                f"Evaluation expects v-{expected_version}, but got dataset with v-{dataset_json['version']}",
+                file=sys.stderr,
+            )
         dataset = dataset_json['data']
 
     with open(args.pred_file) as pred_file:
@@ -105,6 +106,6 @@ if __name__ == '__main__':
     metrics, correct_ids = evaluate(dataset, predictions)
 
     if args.output_correct_ids:
-        print('Output {} correctly answered question IDs.'.format(len(correct_ids)))
+        print(f'Output {len(correct_ids)} correctly answered question IDs.')
         with open('correct_ids.json', 'w') as f:
             json.dump(correct_ids, f)
